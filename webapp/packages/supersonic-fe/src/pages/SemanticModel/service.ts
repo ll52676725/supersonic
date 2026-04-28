@@ -835,3 +835,17 @@ export function deleteLlmConfig(id: number): Promise<any> {
     method: 'DELETE',
   });
 }
+
+export function buildModelSchema(data: any): Promise<any> {
+  return request(`${process.env.API_BASE_URL}model/buildModelSchema`, {
+    method: 'POST',
+    data,
+  });
+}
+
+export function createModelBatch(data: any): Promise<any> {
+  return request(`${process.env.API_BASE_URL}model/createModelBatch`, {
+    method: 'POST',
+    data,
+  });
+}

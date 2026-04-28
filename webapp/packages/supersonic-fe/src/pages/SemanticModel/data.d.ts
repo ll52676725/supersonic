@@ -442,6 +442,45 @@ export declare namespace ISemantic {
     description: string;
     similarTerms: string[];
   }
+
+  interface ILlmItem {
+    id: number;
+    name: string;
+    description: string;
+    config: {
+      modelName: string;
+      provider: string;
+      baseUrl: string;
+      apiKey: string;
+      temperature: number;
+      timeOut: number;
+    };
+    createdBy: string;
+    updatedBy: string;
+    createdAt: string;
+    updatedAt: string;
+    admin: string;
+    viewers: string[];
+    isOpen: number;
+  }
+
+  interface ISemanticColumn {
+    columnName: string;
+    name: string;
+    comment: string;
+    dataType: string;
+    filedType: 'primary_key' | 'foreign_key' | 'partition_time' | 'time' | 'categorical' | 'measure';
+    agg: string;
+    expr: string;
+    unit: string;
+  }
+
+  interface IModelSchema {
+    name: string;
+    bizName: string;
+    description: string;
+    semanticColumns: ISemanticColumn[];
+  }
 }
 
 export declare namespace IChatConfig {

@@ -6,12 +6,14 @@ import { StatusEnum } from '../enum';
 import { useModel, history } from '@umijs/max';
 import { deleteModel, batchUpdateModelStatus } from '../service';
 import ClassModelTypeModal from './ClassModelTypeModal';
+import BatchImportModal from './BatchImportModal';
 import { ColumnsConfig } from './TableColumnRender';
 import TableHeaderFilter from '@/components/TableHeaderFilter';
 import moment from 'moment';
 import styles from './style.less';
 import { ISemantic } from '../data';
 import { toModelList } from '@/pages/SemanticModel/utils';
+import { ImportOutlined } from '@ant-design/icons';
 
 type Props = {
   disabledEdit?: boolean;
@@ -28,6 +30,7 @@ const ModelTable: React.FC<Props> = ({ modelList, disabledEdit = false, onModelC
   const [modelItem, setModelItem] = useState<ISemantic.IModelItem>();
   const [filterParams, setFilterParams] = useState<Record<string, any>>({});
   const [createDataSourceModalOpen, setCreateDataSourceModalOpen] = useState(false);
+  const [batchImportModalOpen, setBatchImportModalOpen] = useState(false);
   const [currentPageNumber, setCurrentPageNumber] = useState<number>(1);
   const actionRef = useRef<ActionType>();
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -273,6 +276,15 @@ const ModelTable: React.FC<Props> = ({ modelList, disabledEdit = false, onModelC
               ? [<></>]
               : [
                   <Button
+                    key="batchImport"
+                    icon={<ImportOutlined />}
+                    onClick={() => {
+                      setBatchImportModalOpen(true);
+                    }}
+                  >
+                    批量导入
+                  </Button>,
+                  <Button
                     key="create"
                     type="primary"
                     onClick={() => {
@@ -299,6 +311,19 @@ const ModelTable: React.FC<Props> = ({ modelList, disabledEdit = false, onModelC
           onCancel={() => {
             setIsEditing(false);
             setCreateDataSourceModalOpen(false);
+          }}
+        />
+      )}
+      {batchImportModalOpen && (
+        <BatchImportModal
+          open={batchImportModalOpen}
+          onCancel={() => {
+            setBatchImportModalOpen(false);
+          }}
+          onSubmit={() => {
+            setBatchImportModalOpen(false);
+            onModelChange?.();
+            window.location.reload();
           }}
         />
       )}
