@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -198,11 +199,12 @@ public class LLMSemanticMatchStrategy extends BaseMatchStrategy<LLMSemanticResul
             ChatQueryContext chatQueryContext) {
 
         try {
-            ChatApp chatApp = ChatAppManager.getChatApp(APP_KEY);
-            if (chatApp == null) {
+            Optional<ChatApp> chatAppOpt = ChatAppManager.getApp(APP_KEY);
+            if (!chatAppOpt.isPresent()) {
                 log.warn("ChatApp not found for key: {}", APP_KEY);
                 return null;
             }
+            ChatApp chatApp = chatAppOpt.get();
 
             ChatModelConfig chatModelConfig = getChatModelConfig(chatQueryContext);
             if (chatModelConfig == null) {
