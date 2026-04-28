@@ -65,4 +65,12 @@ public class MapperConfig extends ParameterConfig {
     public static final Parameter EMBEDDING_MAPPER_ALLOWED_SEGMENT_NATURE =
             new Parameter("s2.mapper.embedding.allowed-segment-nature", "['v', 'd', 'a']",
                     "使用LLM召回二次处理时对问题分词词性的控制", "分词后允许的词性才会进行向量召回", "list", "Mapper相关配置");
+
+    public static final Parameter LLM_SEMANTIC_MATCHER_ENABLE =
+            new Parameter("s2.mapper.llm-semantic.enable", "false", "启用LLM语义匹配开关",
+                    "开启后将使用大模型进行语义理解和匹配，而不是简单的词汇匹配", "bool", "Mapper相关配置");
+
+    public static final Parameter LLM_SEMANTIC_MATCHER_THRESHOLD =
+            new Parameter("s2.mapper.llm-semantic.threshold", "0.95", "LLM语义匹配默认相似度",
+                    "LLM语义匹配结果的默认相似度值", "number", "Mapper相关配置");
 }

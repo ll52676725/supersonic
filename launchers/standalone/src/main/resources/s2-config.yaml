@@ -43,3 +43,6 @@ s2:
         threshold: 0.3
     embedding:
       use-llm-enhance: true
+    llm-semantic:
+      enable: false
+      threshold: 0.95
