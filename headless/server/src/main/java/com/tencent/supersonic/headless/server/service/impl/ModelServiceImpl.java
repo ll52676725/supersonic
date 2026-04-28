@@ -229,10 +229,34 @@ public class ModelServiceImpl implements ModelService {
 
     private List<DbSchema> getDbSchemes(ModelBuildReq modelBuildReq) throws SQLException {
         if (!CollectionUtils.isEmpty(modelBuildReq.getDbSchemas())) {
-            return modelBuildReq.getDbSchemas();
+            return parseDbSchemasFromDdl(modelBuildReq.getDbSchemas());
         }
         Map<String, List<DBColumn>> dbColumnMap = databaseService.getDbColumns(modelBuildReq);
         return convert(dbColumnMap, modelBuildReq);
+    }
+
+    private List<DbSchema> parseDbSchemasFromDdl(List<DbSchema> dbSchemas) {
+        List<DbSchema> result = new ArrayList<>();
+        for (DbSchema dbSchema : dbSchemas) {
+            if (StringUtils.isNotBlank(dbSchema.getDdl()) && CollectionUtils.isEmpty(dbSchema.getDbColumns())) {
+                List<DbSchema> parsedSchemas = DDLParserUtils.parseDDL(dbSchema.getDdl());
+                for (DbSchema parsedSchema : parsedSchemas) {
+                    if (StringUtils.isBlank(parsedSchema.getDb())) {
+                        parsedSchema.setDb(dbSchema.getDb());
+                    }
+                    if (StringUtils.isBlank(parsedSchema.getCatalog())) {
+                        parsedSchema.setCatalog(dbSchema.getCatalog());
+                    }
+                    if (StringUtils.isBlank(parsedSchema.getDdl())) {
+                        parsedSchema.setDdl(dbSchema.getDdl());
+                    }
+                }
+                result.addAll(parsedSchemas);
+            } else {
+                result.add(dbSchema);
+            }
+        }
+        return result;
     }
 
     private List<DbSchema> convert(Map<String, List<DBColumn>> dbColumnMap,

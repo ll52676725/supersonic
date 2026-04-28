@@ -12,12 +12,12 @@ import {
   Card,
   Tabs,
   Tag,
-  Divider,
   Row,
   Col,
   Input,
   Switch,
   Tooltip,
+  Radio,
 } from 'antd';
 import {
   DatabaseOutlined,
@@ -26,6 +26,8 @@ import {
   EyeOutlined,
   CheckCircleOutlined,
   InfoCircleOutlined,
+  FileTextOutlined,
+  ImportOutlined,
 } from '@ant-design/icons';
 import {
   getDatabaseList,
@@ -43,8 +45,10 @@ import styles from './style.less';
 const { Step } = Steps;
 const { TabPane } = Tabs;
 const { Search } = Input;
-const FormItem = Form.Item;
 const { TextArea } = Input;
+const FormItem = Form.Item;
+
+type ImportMode = 'database' | 'ddl';
 
 const FIELD_TYPE_LABELS: Record<string, string> = {
   primary_key: '主键',
@@ -77,6 +81,8 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
   const [analyzing, setAnalyzing] = useState(false);
   const [creating, setCreating] = useState(false);
 
+  const [importMode, setImportMode] = useState<ImportMode>('database');
+
   const [databaseList, setDatabaseList] = useState<ISemantic.IDatabaseItem[]>([]);
   const [catalogList, setCatalogList] = useState<string[]>([]);
   const [dbNameList, setDbNameList] = useState<string[]>([]);
@@ -89,6 +95,9 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
   const [selectedLlmId, setSelectedLlmId] = useState<number>();
   const [useLLM, setUseLLM] = useState(true);
+
+  const [ddlText, setDdlText] = useState<string>('');
+  const [parsedTables, setParsedTables] = useState<string[]>([]);
 
   const [modelSchemas, setModelSchemas] = useState<Record<string, ISemantic.IModelSchema>>({});
   const [searchTableText, setSearchTableText] = useState('');
@@ -109,12 +118,15 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
 
   const resetState = () => {
     setCurrentStep(0);
+    setImportMode('database');
     setSelectedDatabaseId(undefined);
     setSelectedCatalog('');
     setSelectedDbName('');
     setSelectedTables([]);
     setSelectedLlmId(undefined);
     setUseLLM(true);
+    setDdlText('');
+    setParsedTables([]);
     setModelSchemas({});
     setSearchTableText('');
     setActiveTabKey('');
@@ -249,17 +261,24 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
 
   const handleNext = () => {
     if (currentStep === 0) {
-      if (!selectedDatabaseId) {
-        message.error('请选择数据库连接');
-        return;
-      }
-      if (!selectedDbName) {
-        message.error('请选择数据库名');
-        return;
-      }
-      if (selectedTables.length === 0) {
-        message.error('请至少选择一个表');
-        return;
+      if (importMode === 'database') {
+        if (!selectedDatabaseId) {
+          message.error('请选择数据库连接');
+          return;
+        }
+        if (!selectedDbName) {
+          message.error('请选择数据库名');
+          return;
+        }
+        if (selectedTables.length === 0) {
+          message.error('请至少选择一个表');
+          return;
+        }
+      } else {
+        if (!ddlText.trim()) {
+          message.error('请输入建表语句');
+          return;
+        }
       }
     }
     setCurrentStep(currentStep + 1);
@@ -270,21 +289,36 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
   };
 
   const handleAnalyze = async () => {
-    if (selectedTables.length === 0) {
+    if (importMode === 'database' && selectedTables.length === 0) {
       message.error('请至少选择一个表');
+      return;
+    }
+    if (importMode === 'ddl' && !ddlText.trim()) {
+      message.error('请输入建表语句');
       return;
     }
 
     setAnalyzing(true);
     try {
       const params: any = {
-        databaseId: selectedDatabaseId,
-        catalog: selectedCatalog,
-        db: selectedDbName,
-        tables: selectedTables,
         buildByLLM: useLLM,
         domainId: selectDomainId,
       };
+
+      if (importMode === 'database') {
+        params.databaseId = selectedDatabaseId;
+        params.catalog = selectedCatalog;
+        params.db = selectedDbName;
+        params.tables = selectedTables;
+      } else {
+        params.dbSchemas = [
+          {
+            ddl: ddlText,
+            catalog: selectedCatalog || undefined,
+            db: selectedDbName || undefined,
+          },
+        ];
+      }
 
       if (useLLM && selectedLlmId) {
         params.chatModelId = selectedLlmId;
@@ -317,13 +351,24 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
     setCreating(true);
     try {
       const params: any = {
-        databaseId: selectedDatabaseId,
-        catalog: selectedCatalog,
-        db: selectedDbName,
-        tables: Object.keys(modelSchemas),
         buildByLLM: useLLM,
         domainId: selectDomainId,
       };
+
+      if (importMode === 'database') {
+        params.databaseId = selectedDatabaseId;
+        params.catalog = selectedCatalog;
+        params.db = selectedDbName;
+        params.tables = Object.keys(modelSchemas);
+      } else {
+        params.dbSchemas = [
+          {
+            ddl: ddlText,
+            catalog: selectedCatalog || undefined,
+            db: selectedDbName || undefined,
+          },
+        ];
+      }
 
       if (useLLM && selectedLlmId) {
         params.chatModelId = selectedLlmId;
@@ -404,8 +449,8 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
 
   const steps = [
     {
-      title: '选择表',
-      icon: <DatabaseOutlined />,
+      title: importMode === 'database' ? '选择表' : '输入建表语句',
+      icon: importMode === 'database' ? <DatabaseOutlined /> : <FileTextOutlined />,
     },
     {
       title: 'LLM配置',
@@ -417,124 +462,289 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
     },
   ];
 
+  const getSelectedCount = () => {
+    if (importMode === 'database') {
+      return selectedTables.length;
+    }
+    return parsedTables.length;
+  };
+
+  const renderModeSelector = () => (
+    <Card size="small" style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 12, fontWeight: 500 }}>选择导入方式</div>
+      <Radio.Group value={importMode} onChange={(e) => setImportMode(e.target.value)}>
+        <Space direction="vertical" size="middle">
+          <Radio value="database">
+            <Space>
+              <DatabaseOutlined />
+              <span>从数据库表导入</span>
+            </Space>
+            <div style={{ marginLeft: 24, marginTop: 4, color: '#666', fontSize: 12 }}>
+              需要配置数据库连接，从数据库元数据获取表结构
+            </div>
+          </Radio>
+          <Radio value="ddl">
+            <Space>
+              <FileTextOutlined />
+              <span>从建表语句导入</span>
+            </Space>
+            <div style={{ marginLeft: 24, marginTop: 4, color: '#666', fontSize: 12 }}>
+              无需数据库连接，直接解析 CREATE TABLE 语句
+            </div>
+          </Radio>
+        </Space>
+      </Radio.Group>
+    </Card>
+  );
+
+  const renderDatabaseStep = () => (
+    <div className={styles.batchImportStepContent}>
+      <Form form={form} layout="vertical">
+        <Row gutter={16}>
+          <Col span={8}>
+            <FormItem
+              name="databaseId"
+              label="数据库连接"
+              rules={[{ required: true, message: '请选择数据库连接' }]}
+            >
+              <Select
+                showSearch
+                placeholder="请选择数据库连接"
+                loading={loading}
+                onSelect={(value: number, option: any) => handleDatabaseSelect(value, option)}
+                optionFilterProp="children"
+              >
+                {databaseList.map((item) => (
+                  <Select.Option
+                    key={item.id}
+                    value={item.id}
+                    type={item.type}
+                    disabled={!item.hasUsePermission}
+                  >
+                    {item.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormItem>
+          </Col>
+          {catalogList.length > 0 && (
+            <Col span={8}>
+              <FormItem
+                name="catalog"
+                label="Catalog"
+                rules={[{ required: true, message: '请选择Catalog' }]}
+              >
+                <Select
+                  showSearch
+                  placeholder="请选择Catalog"
+                  loading={loading}
+                  onSelect={handleCatalogSelect}
+                  value={selectedCatalog || undefined}
+                >
+                  {catalogList.map((item) => (
+                    <Select.Option key={item} value={item}>
+                      {item}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </FormItem>
+            </Col>
+          )}
+          <Col span={8}>
+            <FormItem
+              name="dbName"
+              label="数据库名"
+              rules={[{ required: true, message: '请选择数据库名' }]}
+            >
+              <Select
+                showSearch
+                placeholder="请选择数据库名"
+                loading={loading}
+                onSelect={handleDbNameSelect}
+                value={selectedDbName || undefined}
+                disabled={dbNameList.length === 0}
+              >
+                {dbNameList.map((item) => (
+                  <Select.Option key={item} value={item}>
+                    {item}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormItem>
+          </Col>
+        </Row>
+      </Form>
+
+      {tableNameList.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <div style={{ marginBottom: 12 }}>
+            <Space>
+              <span>已选择: </span>
+              <Tag color="blue">{selectedTables.length} 个表</Tag>
+            </Space>
+            <Search
+              placeholder="搜索表名"
+              allowClear
+              style={{ width: 300, float: 'right' }}
+              onChange={(e) => {
+                setSearchTableText(e.target.value);
+                tableSearchRef.current = e.target.value;
+              }}
+              onSearch={(value) => {
+                setSearchTableText(value);
+                tableSearchRef.current = value;
+              }}
+            />
+          </div>
+          <Table
+            rowSelection={rowSelection}
+            columns={tableColumns}
+            dataSource={tableDataSource}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `共 ${total} 个表`,
+            }}
+            size="small"
+            scroll={{ y: 350 }}
+          />
+        </div>
+      )}
+    </div>
+  );
+
+  const renderDDLStep = () => (
+    <div className={styles.batchImportStepContent}>
+      <Card size="small" style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 8, fontWeight: 500 }}>
+          输入建表语句
+          <Tooltip title="支持输入多个 CREATE TABLE 语句，用分号分隔">
+            <InfoCircleOutlined style={{ marginLeft: 8, color: '#1890ff' }} />
+          </Tooltip>
+        </div>
+        <TextArea
+          value={ddlText}
+          onChange={(e) => setDdlText(e.target.value)}
+          placeholder={`请输入 CREATE TABLE 语句，例如：
+
+CREATE TABLE users (
+  id BIGINT PRIMARY KEY COMMENT '用户ID',
+  name VARCHAR(100) COMMENT '用户名',
+  email VARCHAR(200) COMMENT '邮箱',
+  created_at DATETIME COMMENT '创建时间'
+);
+
+CREATE TABLE orders (
+  order_id BIGINT PRIMARY KEY COMMENT '订单ID',
+  user_id BIGINT COMMENT '用户ID',
+  amount DECIMAL(10,2) COMMENT '订单金额',
+  order_date DATE COMMENT '订单日期'
+);`}
+          rows={15}
+          style={{ fontFamily: 'Consolas, Monaco, monospace', fontSize: 13 }}
+        />
+        <div style={{ marginTop: 12, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+          <h4 style={{ marginBottom: 8 }}>说明：</h4>
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            <li>支持解析标准 SQL 的 CREATE TABLE 语句</li>
+            <li>自动识别主键、外键、分区时间等语义类型</li>
+            <li>自动提取字段注释作为描述</li>
+            <li>数值类型字段默认为度量，其他类型默认为维度</li>
+          </ul>
+        </div>
+      </Card>
+
+      <Form form={form} layout="vertical">
+        <Row gutter={16}>
+          <Col span={8}>
+            <FormItem label="数据库连接（可选）">
+              <Select
+                showSearch
+                placeholder="请选择数据库连接（可选）"
+                loading={loading}
+                allowClear
+                onSelect={(value: number, option: any) => {
+                  setSelectedDatabaseId(value);
+                  const type = option?.type || '';
+                  if (['STARROCKS', 'KYUUBI', 'PRESTO', 'TRINO'].includes(type)) {
+                    queryCatalogList(value);
+                  } else {
+                    queryDbNameList(value, '');
+                  }
+                }}
+                optionFilterProp="children"
+              >
+                {databaseList.map((item) => (
+                  <Select.Option
+                    key={item.id}
+                    value={item.id}
+                    type={item.type}
+                    disabled={!item.hasUsePermission}
+                  >
+                    {item.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormItem>
+          </Col>
+          {catalogList.length > 0 && (
+            <Col span={8}>
+              <FormItem label="Catalog（可选）">
+                <Select
+                  showSearch
+                  placeholder="请选择Catalog"
+                  loading={loading}
+                  allowClear
+                  onSelect={handleCatalogSelect}
+                  value={selectedCatalog || undefined}
+                >
+                  {catalogList.map((item) => (
+                    <Select.Option key={item} value={item}>
+                      {item}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </FormItem>
+            </Col>
+          )}
+          <Col span={8}>
+            <FormItem label="数据库名（可选）">
+              <Select
+                showSearch
+                placeholder="请选择数据库名"
+                loading={loading}
+                allowClear
+                onSelect={handleDbNameSelect}
+                value={selectedDbName || undefined}
+                disabled={dbNameList.length === 0}
+              >
+                {dbNameList.map((item) => (
+                  <Select.Option key={item} value={item}>
+                    {item}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormItem>
+          </Col>
+        </Row>
+      </Form>
+
+      <div style={{ marginTop: 12, padding: 12, background: '#e6f7ff', borderRadius: 4 }}>
+        <h4 style={{ marginBottom: 8 }}>提示：</h4>
+        <p style={{ margin: 0 }}>
+          数据库连接、Catalog、数据库名均为可选。如果选择了数据库连接，创建的模型将关联到该数据库。
+        </p>
+      </div>
+    </div>
+  );
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
         return (
           <div className={styles.batchImportStepContent}>
-            <Form form={form} layout="vertical">
-              <Row gutter={16}>
-                <Col span={8}>
-                  <FormItem
-                    name="databaseId"
-                    label="数据库连接"
-                    rules={[{ required: true, message: '请选择数据库连接' }]}
-                  >
-                    <Select
-                      showSearch
-                      placeholder="请选择数据库连接"
-                      loading={loading}
-                      onSelect={(value: number, option: any) =>
-                        handleDatabaseSelect(value, option)
-                      }
-                      optionFilterProp="children"
-                    >
-                      {databaseList.map((item) => (
-                        <Select.Option
-                          key={item.id}
-                          value={item.id}
-                          type={item.type}
-                          disabled={!item.hasUsePermission}
-                        >
-                          {item.name}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </FormItem>
-                </Col>
-                {catalogList.length > 0 && (
-                  <Col span={8}>
-                    <FormItem
-                      name="catalog"
-                      label="Catalog"
-                      rules={[{ required: true, message: '请选择Catalog' }]}
-                    >
-                      <Select
-                        showSearch
-                        placeholder="请选择Catalog"
-                        loading={loading}
-                        onSelect={handleCatalogSelect}
-                        value={selectedCatalog || undefined}
-                      >
-                        {catalogList.map((item) => (
-                          <Select.Option key={item} value={item}>
-                            {item}
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    </FormItem>
-                  </Col>
-                )}
-                <Col span={8}>
-                  <FormItem
-                    name="dbName"
-                    label="数据库名"
-                    rules={[{ required: true, message: '请选择数据库名' }]}
-                  >
-                    <Select
-                      showSearch
-                      placeholder="请选择数据库名"
-                      loading={loading}
-                      onSelect={handleDbNameSelect}
-                      value={selectedDbName || undefined}
-                      disabled={dbNameList.length === 0}
-                    >
-                      {dbNameList.map((item) => (
-                        <Select.Option key={item} value={item}>
-                          {item}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </FormItem>
-                </Col>
-              </Row>
-            </Form>
-
-            {tableNameList.length > 0 && (
-              <div style={{ marginTop: 20 }}>
-                <div style={{ marginBottom: 12 }}>
-                  <Space>
-                    <span>已选择: </span>
-                    <Tag color="blue">{selectedTables.length} 个表</Tag>
-                  </Space>
-                  <Search
-                    placeholder="搜索表名"
-                    allowClear
-                    style={{ width: 300, float: 'right' }}
-                    onChange={(e) => {
-                      setSearchTableText(e.target.value);
-                      tableSearchRef.current = e.target.value;
-                    }}
-                    onSearch={(value) => {
-                      setSearchTableText(value);
-                      tableSearchRef.current = value;
-                    }}
-                  />
-                </div>
-                <Table
-                  rowSelection={rowSelection}
-                  columns={tableColumns}
-                  dataSource={tableDataSource}
-                  pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showTotal: (total) => `共 ${total} 个表`,
-                  }}
-                  size="small"
-                  scroll={{ y: 350 }}
-                />
-              </div>
-            )}
+            {renderModeSelector()}
+            {importMode === 'database' ? renderDatabaseStep() : renderDDLStep()}
           </div>
         );
 
@@ -580,14 +790,24 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
                     </Form>
 
                     <div style={{ marginTop: 16, padding: 16, background: '#f5f5f5', borderRadius: 4 }}>
-                      <h4 style={{ marginBottom: 8 }}>已选择的表：</h4>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {selectedTables.map((table) => (
-                          <Tag key={table} color="blue">
-                            {table}
+                      <h4 style={{ marginBottom: 8 }}>
+                        已选择的{importMode === 'database' ? '表' : '内容'}：
+                      </h4>
+                      {importMode === 'database' ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {selectedTables.map((table) => (
+                            <Tag key={table} color="blue">
+                              {table}
+                            </Tag>
+                          ))}
+                        </div>
+                      ) : (
+                        <div>
+                          <Tag color="blue">
+                            {ddlText.length > 100 ? ddlText.substring(0, 100) + '...' : ddlText || '未输入'}
                           </Tag>
-                        ))}
-                      </div>
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ marginTop: 16, padding: 16, background: '#e6f7ff', borderRadius: 4 }}>
@@ -782,24 +1002,30 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
 
     if (currentStep < 2) {
       if (currentStep === 1) {
+        const isDisabled = importMode === 'database' 
+          ? selectedTables.length === 0 
+          : !ddlText.trim();
         footerBtns.push(
           <Button
             key="analyze"
             type="primary"
             onClick={handleAnalyze}
             loading={analyzing}
-            disabled={selectedTables.length === 0}
+            disabled={isDisabled}
           >
             {analyzing ? '语义分析中...' : '开始语义分析'}
           </Button>,
         );
       } else {
+        const isDisabled = importMode === 'database'
+          ? selectedTables.length === 0
+          : !ddlText.trim();
         footerBtns.push(
           <Button
             key="next"
             type="primary"
             onClick={handleNext}
-            disabled={selectedTables.length === 0}
+            disabled={isDisabled}
           >
             下一步
           </Button>,
@@ -828,7 +1054,7 @@ const BatchImportModal: React.FC<Props> = ({ open, onCancel, onSubmit }) => {
     <Modal
       title={
         <Space>
-          <DatabaseOutlined />
+          <ImportOutlined />
           批量导入模型
         </Space>
       }
