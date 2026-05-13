@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,22 @@ public class TermServiceImpl extends ServiceImpl<TermMapper, TermDO> implements 
         termReq.updatedBy(user.getName());
         convert(termReq, termSetDO);
         saveOrUpdate(termSetDO);
+    }
+
+    @Override
+    public void saveBatch(List<TermReq> termReqs, User user) {
+        if (CollectionUtils.isEmpty(termReqs)) {
+            return;
+        }
+        List<TermDO> termDOS = new ArrayList<>();
+        for (TermReq termReq : termReqs) {
+            termReq.createdBy(user.getName());
+            termReq.updatedBy(user.getName());
+            TermDO termDO = new TermDO();
+            convert(termReq, termDO);
+            termDOS.add(termDO);
+        }
+        saveBatch(termDOS);
     }
 
     @Override

@@ -803,6 +803,32 @@ export function saveOrUpdate(data: any): Promise<any> {
   });
 }
 
+export function saveBatchTerm(data: any): Promise<any> {
+  return request(`${process.env.API_BASE_URL}term/saveBatch`, {
+    method: 'POST',
+    data,
+  });
+}
+
+export function uploadTerm(file: File, domainId: number): Promise<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('domainId', String(domainId));
+  return request(`${process.env.API_BASE_URL}term/upload`, {
+    method: 'POST',
+    data: formData,
+  });
+}
+
+export function downloadTermTemplate(): void {
+  const link = document.createElement('a');
+  link.href = `${process.env.API_BASE_URL}term/downloadTemplate`;
+  link.download = '术语导入模板.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 export function deleteTerm(data: any): Promise<any> {
   return request(`${process.env.API_BASE_URL}term/deleteBatch`, {
     method: 'POST',

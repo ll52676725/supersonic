@@ -73,4 +73,12 @@ public class MapperConfig extends ParameterConfig {
     public static final Parameter LLM_SEMANTIC_MATCHER_THRESHOLD =
             new Parameter("s2.mapper.llm-semantic.threshold", "0.95", "LLM语义匹配默认相似度",
                     "LLM语义匹配结果的默认相似度值", "number", "Mapper相关配置");
+
+    public static final Parameter LLM_METRIC_RECALL_ENABLE =
+            new Parameter("s2.mapper.llm-metric-recall.enable", "false", "启用LLM指标补全召回开关",
+                    "开启后在规则匹配后，通过LLM对指标列表进行重新补全召回，提高SQL生成准确率", "bool", "Mapper相关配置");
+
+    public static final Parameter LLM_METRIC_RECALL_TOP_N =
+            new Parameter("s2.mapper.llm-metric-recall.top-n", "5", "LLM指标补全召回数量",
+                    "LLM对指标列表进行补全召回时返回的最大指标数量", "number", "Mapper相关配置");
 }

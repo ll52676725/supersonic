@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import styles from '../style.less';
 import { ISemantic } from '../../data';
 import TermCreateForm from './TermCreateForm';
+import TermBatchCreateForm from './TermBatchCreateForm';
 import { isArrayOfValues } from '@/utils/utils';
 import TableHeaderFilter from '@/components/TableHeaderFilter';
 
@@ -19,6 +20,7 @@ const TermTable: React.FC<Props> = ({}) => {
   const domainModel = useModel('SemanticModel.domainData');
   const { selectDomainId } = domainModel;
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
+  const [batchCreateModalVisible, setBatchCreateModalVisible] = useState<boolean>(false);
   const [termItem, setTermItem] = useState<ISemantic.ITermItem>();
 
   const [tableData, setTableData] = useState<ISemantic.ITermItem[]>([]);
@@ -200,6 +202,15 @@ const TermTable: React.FC<Props> = ({}) => {
             创建术语
           </Button>,
           <Button
+            key="batchCreate"
+            type="primary"
+            onClick={() => {
+              setBatchCreateModalVisible(true);
+            }}
+          >
+            批量创建
+          </Button>,
+          <Button
             key="batchDelete"
             type="primary"
             disabled={!isArrayOfValues(selectedRowKeys)}
@@ -224,6 +235,17 @@ const TermTable: React.FC<Props> = ({}) => {
           }}
         />
       )}
+      <TermBatchCreateForm
+        visible={batchCreateModalVisible}
+        domainId={selectDomainId}
+        onSuccess={() => {
+          queryTermList();
+          setBatchCreateModalVisible(false);
+        }}
+        onCancel={() => {
+          setBatchCreateModalVisible(false);
+        }}
+      />
     </>
   );
 };

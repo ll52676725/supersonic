@@ -13,6 +13,8 @@ public interface TermService {
 
     void saveOrUpdate(TermReq termSetReq, User user);
 
+    void saveBatch(List<TermReq> termReqs, User user);
+
     void delete(Long id);
 
     void deleteBatch(MetaBatchReq metaBatchReq);
