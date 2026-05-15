@@ -11,12 +11,14 @@ import com.tencent.supersonic.chat.server.agent.Agent;
 import com.tencent.supersonic.chat.server.executor.ChatQueryExecutor;
 import com.tencent.supersonic.chat.server.parser.ChatQueryParser;
 import com.tencent.supersonic.chat.server.persistence.dataobject.ChatQueryDO;
+import com.tencent.supersonic.chat.server.pojo.ChatContext;
 import com.tencent.supersonic.chat.server.pojo.ExecuteContext;
 import com.tencent.supersonic.chat.server.pojo.ParseContext;
 import com.tencent.supersonic.chat.server.processor.execute.DataInterpretProcessor;
 import com.tencent.supersonic.chat.server.processor.execute.ExecuteResultProcessor;
 import com.tencent.supersonic.chat.server.processor.parse.ParseResultProcessor;
 import com.tencent.supersonic.chat.server.service.AgentService;
+import com.tencent.supersonic.chat.server.service.ChatContextService;
 import com.tencent.supersonic.chat.server.service.ChatManageService;
 import com.tencent.supersonic.chat.server.service.ChatQueryService;
 import com.tencent.supersonic.chat.server.util.ComponentFactory;
@@ -87,6 +89,8 @@ public class ChatQueryServiceImpl implements ChatQueryService {
     @Autowired
     @Lazy
     private AgentService agentService;
+    @Autowired
+    private ChatContextService chatContextService;
 
     private final List<ChatQueryParser> chatQueryParsers = ComponentFactory.getChatParsers();
     private final List<ChatQueryExecutor> chatQueryExecutors = ComponentFactory.getChatExecutors();
@@ -108,13 +112,30 @@ public class ChatQueryServiceImpl implements ChatQueryService {
 
     @Override
     public ChatParseResp parse(ChatParseReq chatParseReq) {
+        String originalQueryText = chatParseReq.getQueryText();
         Long queryId = chatParseReq.getQueryId();
         if (Objects.isNull(queryId)) {
             queryId = chatManageService.createChatQuery(chatParseReq);
             chatParseReq.setQueryId(queryId);
         }
 
-        ParseContext parseContext = buildParseContext(chatParseReq, new ChatParseResp(queryId));
+        ChatContext chatContext = chatContextService.resolveCoreference(chatParseReq.getChatId(),
+                chatParseReq.getQueryText());
+
+        if (StringUtils.isNotBlank(chatContext.getRewrittenText())) {
+            log.info("Query rewritten from '{}' to '{}'", chatParseReq.getQueryText(),
+                    chatContext.getRewrittenText());
+            chatParseReq.setQueryText(chatContext.getRewrittenText());
+        }
+
+        ChatParseResp chatParseResp = new ChatParseResp(queryId);
+        chatParseResp.setOriginalQueryText(originalQueryText);
+        chatParseResp.setRewrittenQueryText(chatContext.getRewrittenText());
+        chatParseResp.setCoreferenceInfo(chatContext.getCoreferenceInfo());
+
+        ParseContext parseContext = buildParseContext(chatParseReq, chatParseResp);
+        parseContext.setChatContext(chatContext);
+
         for (ChatQueryParser parser : chatQueryParsers) {
             if (parser.accept(parseContext)) {
                 parser.parse(parseContext);
@@ -125,6 +146,12 @@ public class ChatQueryServiceImpl implements ChatQueryService {
             if (processor.accept(parseContext)) {
                 processor.process(parseContext);
             }
+        }
+
+        if (!CollectionUtils.isEmpty(parseContext.getResponse().getSelectedParses())) {
+            SemanticParseInfo bestParse = parseContext.getResponse().getSelectedParses().get(0);
+            chatContextService.updateEntityChain(chatParseReq.getChatId(), bestParse);
+            chatContextService.updateFilterStack(chatParseReq.getChatId(), bestParse);
         }
 
         if (!parseContext.needFeedback()) {

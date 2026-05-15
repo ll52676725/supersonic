@@ -1,5 +1,6 @@
 import {
   ChatContextType,
+  CoreferenceItemType,
   DateInfoType,
   EntityInfoType,
   FilterItemType,
@@ -109,6 +110,9 @@ const ChatItem: React.FC<Props> = ({
     {}
   );
   const [isParserError, setIsParseError] = useState<boolean>(false);
+  const [originalQueryText, setOriginalQueryText] = useState<string>('');
+  const [rewrittenQueryText, setRewrittenQueryText] = useState<string>('');
+  const [coreferenceInfo, setCoreferenceInfo] = useState<CoreferenceItemType[]>([]);
   const resetState = () => {
     setParseLoading(false);
     setParseTimeCost(undefined);
@@ -126,6 +130,9 @@ const ChatItem: React.FC<Props> = ({
     setEntityInfo({} as EntityInfoType);
     setDataCache({});
     setIsParseError(false);
+    setOriginalQueryText('');
+    setRewrittenQueryText('');
+    setCoreferenceInfo([]);
   };
 
   const prefixCls = `${PREFIX_CLS}-item`;
@@ -238,8 +245,14 @@ const ChatItem: React.FC<Props> = ({
     });
     setParseLoading(false);
     const { code, data } = parseData || {};
-    const { state, selectedParses, candidateParses, queryId, parseTimeCost, errorMsg } = data || {};
+    const { state, selectedParses, candidateParses, queryId, parseTimeCost, errorMsg,
+      originalQueryText: originalText, rewrittenQueryText: rewrittenText, coreferenceInfo: corefInfo } = data || {};
     const parses = selectedParses?.concat(candidateParses || []) || [];
+
+    setOriginalQueryText(originalText || msg);
+    setRewrittenQueryText(rewrittenText);
+    setCoreferenceInfo(corefInfo || []);
+
     if (
       code !== 200 ||
       state === ParseStateEnum.FAILED ||
@@ -511,6 +524,9 @@ const ChatItem: React.FC<Props> = ({
                   integrateSystem={integrateSystem}
                   parseTimeCost={parseTimeCost?.parseTime}
                   isDeveloper={isDeveloper}
+                  originalQueryText={originalQueryText}
+                  rewrittenQueryText={rewrittenQueryText}
+                  coreferenceInfo={coreferenceInfo}
                   onSelectParseInfo={onSelectParseInfo}
                   onSwitchEntity={onSwitchEntity}
                   onFiltersChange={onFiltersChange}

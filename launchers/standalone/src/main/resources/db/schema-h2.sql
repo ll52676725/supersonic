@@ -2,10 +2,15 @@
 CREATE TABLE IF NOT EXISTS `s2_chat_context`
 (
     `chat_id`        BIGINT NOT NULL , -- context chat id
+    `turn_num`       INT DEFAULT 0 , -- 对话轮次
     `modified_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP , -- row modify time
-    `query_user`           varchar(64) DEFAULT NULL , -- row modify user
+    `query_user`     varchar(64) DEFAULT NULL , -- row modify user
     `query_text`     LONGVARCHAR DEFAULT NULL , -- query text
+    `rewritten_text` LONGVARCHAR DEFAULT NULL , -- 指代词消解后的完整问题
     `semantic_parse` LONGVARCHAR DEFAULT NULL , -- parse data
+    `entity_chain`   LONGVARCHAR DEFAULT NULL , -- 实体链 JSON
+    `filter_stack`   LONGVARCHAR DEFAULT NULL , -- 过滤器栈 JSON
+    `coreference_info` LONGVARCHAR DEFAULT NULL , -- 指代消解信息 JSON
     `ext_data`       LONGVARCHAR DEFAULT NULL , -- extend data
     PRIMARY KEY (`chat_id`)
     );

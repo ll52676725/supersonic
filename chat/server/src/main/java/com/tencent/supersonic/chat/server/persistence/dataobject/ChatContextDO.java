@@ -14,9 +14,15 @@ public class ChatContextDO implements Serializable {
 
     @TableId
     private Integer chatId;
+    private Integer turnNum;
     private Instant modifiedAt;
     @TableField("query_user")
     private String queryUser;
     private String queryText;
+    private String rewrittenText;
     private String semanticParse;
+    private String entityChain;
+    private String filterStack;
+    private String coreferenceInfo;
+    private String extData;
 }

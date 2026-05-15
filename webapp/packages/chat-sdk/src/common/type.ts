@@ -1,6 +1,15 @@
 import { Dayjs } from 'dayjs';
 import { ChatContextTypeQueryTypeEnum } from './constants';
 
+export type CoreferenceItemType = {
+  originalText: string;
+  resolvedText: string;
+  startPos: number;
+  endPos: number;
+  type: string;
+  sourceTurn: string;
+};
+
 export type SearchRecommendItem = {
   complete: boolean;
   modelId: number;
@@ -163,6 +172,9 @@ export type ParseDataType = {
   chatId: number;
   queryId: number;
   queryText: string;
+  originalQueryText: string;
+  rewrittenQueryText: string;
+  coreferenceInfo: CoreferenceItemType[];
   state: ParseStateEnum;
   selectedParses: ChatContextType[];
   candidateParses: ChatContextType[];

@@ -57,27 +57,28 @@ public class TermController {
 
     @PostMapping("/upload")
     public List<TermUploadResp> upload(@RequestParam("file") MultipartFile file,
-            @RequestParam("domainId") Long domainId,
-            HttpServletRequest request, HttpServletResponse response) {
+            @RequestParam("domainId") Long domainId, HttpServletRequest request,
+            HttpServletResponse response) {
         User user = UserHolder.findUser(request, response);
         List<TermUploadResp> result = new ArrayList<>();
         try {
             InputStream inputStream = file.getInputStream();
-            
+
             List<TermExcelData> dataList = new ArrayList<>();
-            EasyExcel.read(inputStream, TermExcelData.class, new AnalysisEventListener<TermExcelData>() {
-                @Override
-                public void invoke(TermExcelData data, AnalysisContext context) {
-                    dataList.add(data);
-                }
-                @Override
-                public void doAfterAllAnalysed(AnalysisContext context) {
-                }
-            }).sheet().doRead();
+            EasyExcel.read(inputStream, TermExcelData.class,
+                    new AnalysisEventListener<TermExcelData>() {
+                        @Override
+                        public void invoke(TermExcelData data, AnalysisContext context) {
+                            dataList.add(data);
+                        }
+
+                        @Override
+                        public void doAfterAllAnalysed(AnalysisContext context) {}
+                    }).sheet().doRead();
 
             int successCount = 0;
             int failCount = 0;
-            
+
             for (int i = 0; i < dataList.size(); i++) {
                 TermExcelData data = dataList.get(i);
                 TermUploadResp resp = new TermUploadResp();
@@ -85,7 +86,7 @@ public class TermController {
                 resp.setName(data.getName());
                 resp.setAlias(data.getAlias());
                 resp.setDescription(data.getDescription());
-                
+
                 if (StringUtils.isBlank(data.getName())) {
                     resp.setSuccess(false);
                     resp.setMessage("名称不能为空");
@@ -130,26 +131,26 @@ public class TermController {
     public void downloadTemplate(HttpServletResponse response) {
         try {
             String fileName = "术语导入模板.xlsx";
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setContentType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setCharacterEncoding("utf-8");
-            response.setHeader("Content-disposition", "attachment;filename*=utf-8''" 
+            response.setHeader("Content-disposition", "attachment;filename*=utf-8''"
                     + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
-            
+
             List<TermExcelData> dataList = new ArrayList<>();
             TermExcelData example1 = new TermExcelData();
             example1.setName("日活跃用户");
             example1.setAlias("DAU,活跃用户");
             example1.setDescription("每日访问系统的独立用户数量");
             dataList.add(example1);
-            
+
             TermExcelData example2 = new TermExcelData();
             example2.setName("月活跃用户");
             example2.setAlias("MAU");
             example2.setDescription("每月访问系统的独立用户数量");
             dataList.add(example2);
-            
-            EasyExcel.write(response.getOutputStream(), TermExcelData.class)
-                    .sheet("模板")
+
+            EasyExcel.write(response.getOutputStream(), TermExcelData.class).sheet("模板")
                     .doWrite(dataList);
         } catch (Exception e) {
             log.error("下载模板失败", e);

@@ -12,6 +12,7 @@ public class ParseContext {
     private ChatParseReq request;
     private ChatParseResp response;
     private Agent agent;
+    private ChatContext chatContext;
 
     public ParseContext(ChatParseReq request, ChatParseResp response) {
         this.request = request;

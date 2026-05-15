@@ -1,10 +1,11 @@
 import React, { ReactNode } from 'react';
-import { ChatContextType, DateInfoType, EntityInfoType, FilterItemType } from '../../common/type';
-import { Button, DatePicker, Row, Col } from 'antd';
+import { ChatContextType, CoreferenceItemType, DateInfoType, EntityInfoType, FilterItemType } from '../../common/type';
+import { Button, DatePicker, Row, Col, Tag } from 'antd';
 import { CheckCircleFilled, CloseCircleFilled, ReloadOutlined } from '@ant-design/icons';
 import Loading from './Loading';
 import FilterItem from './FilterItem';
 import MarkDown from '../ChatMsg/MarkDown';
+import CoreferenceHighlighter from './CoreferenceHighlighter';
 import classNames from 'classnames';
 import { isMobile } from '../../utils/utils';
 import dayjs, { Dayjs } from 'dayjs';
@@ -31,6 +32,9 @@ type Props = {
   parseTimeCost?: number;
   isDeveloper?: boolean;
   isSimpleMode?: boolean;
+  originalQueryText?: string;
+  rewrittenQueryText?: string;
+  coreferenceInfo?: CoreferenceItemType[];
   onSelectParseInfo: (parseInfo: ChatContextType) => void;
   onSwitchEntity: (entityId: string) => void;
   onFiltersChange: (filters: FilterItemType[]) => void;
@@ -55,6 +59,9 @@ const ParseTip: React.FC<Props> = ({
   integrateSystem,
   parseTimeCost,
   isDeveloper,
+  originalQueryText,
+  rewrittenQueryText,
+  coreferenceInfo,
   onSelectParseInfo,
   onSwitchEntity,
   onFiltersChange,
@@ -215,9 +222,46 @@ const ParseTip: React.FC<Props> = ({
 
   const { type: agentType } = properties || {};
 
+  const hasCoreference = coreferenceInfo && coreferenceInfo.length > 0;
+
+  const getContextInfoNode = () => {
+    if (!hasCoreference) {
+      return getTipNode({ parseInfo: currentParseInfo, dimensionFilters, entityInfo });
+    }
+    return (
+      <>
+        {getTipNode({ parseInfo: currentParseInfo, dimensionFilters, entityInfo })}
+        <div className={`${prefixCls}-tip-item`}>
+          <div className={`${prefixCls}-tip-item-name`}>上下文理解：</div>
+          <div className={`${prefixCls}-tip-item-content`}>
+            <div className={`${prefixCls}-coreference`}>
+              <div className={`${prefixCls}-coreference-query`}>
+                <Tag color="blue">原始查询</Tag>
+                <span className={`${prefixCls}-coreference-text`}>
+                  <CoreferenceHighlighter
+                    text={originalQueryText || ''}
+                    coreferenceInfo={coreferenceInfo}
+                  />
+                </span>
+              </div>
+              {rewrittenQueryText && rewrittenQueryText !== originalQueryText && (
+                <div className={`${prefixCls}-coreference-query`}>
+                  <Tag color="green">解析后</Tag>
+                  <span className={`${prefixCls}-coreference-text`}>
+                    {rewrittenQueryText}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   const tipNode = (
     <div className={`${prefixCls}-tip`}>
-      {getTipNode({ parseInfo: currentParseInfo, dimensionFilters, entityInfo })}
+      {getContextInfoNode()}
       {!(!!agentType && queryMode !== 'LLM_S2SQL') && getFiltersNode()}
     </div>
   );

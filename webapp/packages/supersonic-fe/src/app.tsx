@@ -35,7 +35,7 @@ Spin.setDefaultIndicator(
 const getAuthCodes = (params: any) => {
   const { currentUser } = params;
   const codes = [];
-  if (currentUser?.superAdmin) {
+  if (currentUser?.isAdmin === 1 || currentUser?.superAdmin) {
     codes.push(ROUTE_AUTH_CODES.SYSTEM_ADMIN);
   }
   return codes;

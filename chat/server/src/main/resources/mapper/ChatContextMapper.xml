@@ -8,16 +8,39 @@
     <resultMap id="ChatContextDO"
                type="com.tencent.supersonic.chat.server.persistence.dataobject.ChatContextDO">
         <id column="chat_id" property="chatId"/>
+        <result column="turn_num" property="turnNum"/>
         <result column="modified_at" property="modifiedAt"/>
         <result column="query_user" property="queryUser"/>
         <result column="query_text" property="queryText"/>
+        <result column="rewritten_text" property="rewrittenText"/>
         <result column="semantic_parse" property="semanticParse"/>
-        <!--<result column="ext_data" property="extData"/>-->
+        <result column="entity_chain" property="entityChain"/>
+        <result column="filter_stack" property="filterStack"/>
+        <result column="coreference_info" property="coreferenceInfo"/>
+        <result column="ext_data" property="extData"/>
     </resultMap>
 
     <select id="getContextByChatId"  resultMap="ChatContextDO">
         select *
         from s2_chat_context where chat_id=#{chatId} limit 1
     </select>
+
+    <insert id="insertOrUpdate" parameterType="com.tencent.supersonic.chat.server.persistence.dataobject.ChatContextDO">
+        insert into s2_chat_context
+        (chat_id, turn_num, modified_at, query_user, query_text, rewritten_text, semantic_parse, entity_chain, filter_stack, coreference_info, ext_data)
+        values
+        (#{chatId}, #{turnNum}, now(), #{queryUser}, #{queryText}, #{rewrittenText}, #{semanticParse}, #{entityChain}, #{filterStack}, #{coreferenceInfo}, #{extData})
+        on duplicate key update
+            turn_num = values(turn_num),
+            modified_at = now(),
+            query_user = values(query_user),
+            query_text = values(query_text),
+            rewritten_text = values(rewritten_text),
+            semantic_parse = values(semantic_parse),
+            entity_chain = values(entity_chain),
+            filter_stack = values(filter_stack),
+            coreference_info = values(coreference_info),
+            ext_data = values(ext_data)
+    </insert>
 
 </mapper>

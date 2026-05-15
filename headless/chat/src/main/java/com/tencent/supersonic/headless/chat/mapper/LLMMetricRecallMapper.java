@@ -49,18 +49,13 @@ public class LLMMetricRecallMapper extends BaseMapper {
                     + "4. Prioritize metrics that directly answer the user's question\n"
                     + "5. Also consider related metrics that might provide valuable context\n"
                     + "6. Return at most {{topN}} metrics\n"
-                    + "7. Output must be in JSON format as specified below\n"
-                    + "#Input:\n"
+                    + "7. Output must be in JSON format as specified below\n" + "#Input:\n"
                     + "User Query: {{queryText}}\n"
                     + "Currently Matched Metrics: {{matchedMetrics}}\n"
-                    + "All Available Metrics: {{allMetrics}}\n"
-                    + "#Output Format (JSON):\n"
-                    + "{\n"
+                    + "All Available Metrics: {{allMetrics}}\n" + "#Output Format (JSON):\n" + "{\n"
                     + "  \"recalledMetrics\": [\n"
                     + "    {\"id\": 1, \"name\": \"metric_name\", \"reason\": \"why this metric is relevant\", \"score\": 0.95}\n"
-                    + "  ]\n"
-                    + "}\n"
-                    + "#Notes:\n"
+                    + "  ]\n" + "}\n" + "#Notes:\n"
                     + "- The 'reason' field should briefly explain why you think this metric is relevant to the query\n"
                     + "- The 'score' field should be a value between 0 and 1 indicating your confidence in this match\n"
                     + "- Include both explicitly mentioned and implicitly relevant metrics\n"
@@ -96,7 +91,8 @@ public class LLMMetricRecallMapper extends BaseMapper {
 
     @Override
     public boolean accept(ChatQueryContext chatQueryContext) {
-        boolean llmOrRule = chatQueryContext.getRequest().getText2SQLType() == Text2SQLType.LLM_OR_RULE;
+        boolean llmOrRule =
+                chatQueryContext.getRequest().getText2SQLType() == Text2SQLType.LLM_OR_RULE;
         MapperConfig mapperConfig = ContextUtils.getBean(MapperConfig.class);
         boolean enableRecall = Boolean.parseBoolean(
                 mapperConfig.getParameterValue(MapperConfig.LLM_METRIC_RECALL_ENABLE));
@@ -127,8 +123,7 @@ public class LLMMetricRecallMapper extends BaseMapper {
 
         Set<Long> alreadyMatchedMetricIds = currentMatches.stream()
                 .filter(match -> SchemaElementType.METRIC.equals(match.getElement().getType()))
-                .map(match -> match.getElement().getId())
-                .collect(Collectors.toSet());
+                .map(match -> match.getElement().getId()).collect(Collectors.toSet());
 
         List<SchemaElement> allMetrics = chatQueryContext.getSemanticSchema().getMetrics(dataSetId);
         if (CollectionUtils.isEmpty(allMetrics)) {
@@ -138,16 +133,16 @@ public class LLMMetricRecallMapper extends BaseMapper {
 
         String queryText = chatQueryContext.getRequest().getQueryText();
         try {
-            MetricRecallResponse response = callLLMForMetricRecall(
-                    queryText, currentMatches, allMetrics, chatQueryContext);
+            MetricRecallResponse response =
+                    callLLMForMetricRecall(queryText, currentMatches, allMetrics, chatQueryContext);
 
             if (response != null && CollectionUtils.isNotEmpty(response.getRecalledMetrics())) {
                 addRecalledMetricsToMapInfo(response, allMetrics, dataSetId,
                         alreadyMatchedMetricIds, chatQueryContext);
             }
         } catch (Exception e) {
-            log.error("Error in LLM metric recall for dataset: {}, query: {}",
-                    dataSetId, chatQueryContext.getRequest().getQueryText(), e);
+            log.error("Error in LLM metric recall for dataset: {}, query: {}", dataSetId,
+                    chatQueryContext.getRequest().getQueryText(), e);
         }
     }
 
@@ -170,8 +165,8 @@ public class LLMMetricRecallMapper extends BaseMapper {
             }
 
             MapperConfig mapperConfig = ContextUtils.getBean(MapperConfig.class);
-            int topN = Integer.parseInt(
-                    mapperConfig.getParameterValue(MapperConfig.LLM_METRIC_RECALL_TOP_N));
+            int topN = Integer
+                    .parseInt(mapperConfig.getParameterValue(MapperConfig.LLM_METRIC_RECALL_TOP_N));
 
             String matchedMetricsJson = buildMatchedMetricsJson(matchedMetrics);
             String allMetricsJson = buildAllMetricsJson(allMetrics);
@@ -226,14 +221,11 @@ public class LLMMetricRecallMapper extends BaseMapper {
                 continue;
             }
 
-            SchemaElementMatch schemaElementMatch = SchemaElementMatch.builder()
-                    .element(metric)
-                    .frequency(BaseWordBuilder.DEFAULT_FREQUENCY)
-                    .word(metric.getName())
+            SchemaElementMatch schemaElementMatch = SchemaElementMatch.builder().element(metric)
+                    .frequency(BaseWordBuilder.DEFAULT_FREQUENCY).word(metric.getName())
                     .detectWord(metric.getName())
                     .similarity(recalled.getScore() != null ? recalled.getScore() : 0.9)
-                    .llmMatched(true)
-                    .build();
+                    .llmMatched(true).build();
 
             addToSchemaMap(chatQueryContext.getMapInfo(), dataSetId, schemaElementMatch);
             addedCount++;
@@ -292,8 +284,8 @@ public class LLMMetricRecallMapper extends BaseMapper {
 
     private ChatModelConfig getChatModelConfig(ChatQueryContext chatQueryContext) {
         if (chatQueryContext.getRequest() != null
-                && chatQueryContext.getRequest().getChatAppConfig() != null
-                && chatQueryContext.getRequest().getChatAppConfig().containsKey("REWRITE_MULTI_TURN")) {
+                && chatQueryContext.getRequest().getChatAppConfig() != null && chatQueryContext
+                        .getRequest().getChatAppConfig().containsKey("REWRITE_MULTI_TURN")) {
             return chatQueryContext.getRequest().getChatAppConfig().get("REWRITE_MULTI_TURN")
                     .getChatModelConfig();
         }

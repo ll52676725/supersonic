@@ -8,4 +8,6 @@ import org.apache.ibatis.annotations.Mapper;
 public interface ChatContextMapper extends BaseMapper<ChatContextDO> {
 
     ChatContextDO getContextByChatId(Integer chatId);
+
+    boolean insertOrUpdate(ChatContextDO chatContextDO);
 }

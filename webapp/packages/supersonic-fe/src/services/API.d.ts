@@ -22,6 +22,7 @@ declare global {
       orgName: string;
       access?: 'user' | 'guest' | 'admin';
       name?:string;
+      isAdmin?: number;
     };
 
     export interface UserItem {

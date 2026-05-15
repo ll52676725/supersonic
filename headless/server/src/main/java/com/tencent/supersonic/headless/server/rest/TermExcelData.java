@@ -5,10 +5,10 @@ import com.alibaba.excel.annotation.ExcelProperty;
 public class TermExcelData {
     @ExcelProperty("名称")
     private String name;
-    
+
     @ExcelProperty("近义词")
     private String alias;
-    
+
     @ExcelProperty("描述")
     private String description;
 

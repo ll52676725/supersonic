@@ -1,8 +1,11 @@
 package com.tencent.supersonic.headless.chat.mapper;
 
+import com.google.common.collect.Lists;
 import com.tencent.supersonic.common.config.ParameterConfig;
 import com.tencent.supersonic.common.pojo.Parameter;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service("HeadlessMapperConfig")
 public class MapperConfig extends ParameterConfig {
@@ -81,4 +84,10 @@ public class MapperConfig extends ParameterConfig {
     public static final Parameter LLM_METRIC_RECALL_TOP_N =
             new Parameter("s2.mapper.llm-metric-recall.top-n", "5", "LLM指标补全召回数量",
                     "LLM对指标列表进行补全召回时返回的最大指标数量", "number", "Mapper相关配置");
+
+    @Override
+    public List<Parameter> getSysParameters() {
+        return Lists.newArrayList(EMBEDDING_MAPPER_USE_LLM, LLM_SEMANTIC_MATCHER_ENABLE,
+                LLM_METRIC_RECALL_ENABLE, LLM_METRIC_RECALL_TOP_N);
+    }
 }

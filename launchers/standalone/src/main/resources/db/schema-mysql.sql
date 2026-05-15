@@ -99,10 +99,15 @@ CREATE TABLE IF NOT EXISTS `s2_chat_memory` (
 
 CREATE TABLE IF NOT EXISTS `s2_chat_context` (
                                                  `chat_id` bigint(20) NOT NULL COMMENT 'context chat id',
+    `turn_num` int(11) DEFAULT 0 COMMENT '对话轮次',
     `modified_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'row modify time',
     `query_user` varchar(64) DEFAULT NULL COMMENT 'row modify user',
     `query_text` text COMMENT 'query text',
+    `rewritten_text` text COMMENT '指代词消解后的完整问题',
     `semantic_parse` text COMMENT 'parse data',
+    `entity_chain` text COMMENT '实体链 JSON',
+    `filter_stack` text COMMENT '过滤器栈 JSON',
+    `coreference_info` text COMMENT '指代消解信息 JSON',
     `ext_data` text COMMENT 'extend data',
     PRIMARY KEY (`chat_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
