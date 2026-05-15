@@ -1,0 +1,78 @@
+@prefix: chat-item;
+
+.@{prefix}-coreference {
+  margin-top: 8px;
+  padding: 12px;
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 4px;
+
+  &-query {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .ant-tag {
+      flex-shrink: 0;
+      margin: 0;
+    }
+  }
+
+  &-text {
+    flex: 1;
+    word-break: break-all;
+    line-height: 1.6;
+  }
+}
+
+.coreference-highlighter {
+  .coreference-mark {
+    background-color: #e6f7ff;
+    color: #1890ff;
+    padding: 1px 4px;
+    border-radius: 3px;
+    cursor: help;
+    border: 1px solid #91d5ff;
+    font-weight: 500;
+
+    &:hover {
+      background-color: #bae7ff;
+    }
+
+    .coreference-badge {
+      font-size: 10px;
+      color: #52c41a;
+      margin-left: 2px;
+    }
+  }
+
+  .coreference-tooltip {
+    .tooltip-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+
+      .tooltip-arrow {
+        color: #52c41a;
+        font-weight: bold;
+      }
+
+      .tooltip-resolved {
+        color: #52c41a;
+        font-weight: 500;
+      }
+    }
+
+    .tooltip-source {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #8c8c8c;
+    }
+  }
+}
