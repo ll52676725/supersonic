@@ -6,6 +6,7 @@ import com.tencent.supersonic.chat.api.pojo.FilterStackItem;
 import com.tencent.supersonic.chat.server.persistence.repository.ChatContextRepository;
 import com.tencent.supersonic.chat.server.pojo.ChatContext;
 import com.tencent.supersonic.chat.server.service.ChatContextService;
+import com.tencent.supersonic.common.pojo.enums.FilterOperatorEnum;
 import com.tencent.supersonic.headless.api.pojo.SchemaElementMatch;
 import com.tencent.supersonic.headless.api.pojo.SemanticParseInfo;
 import lombok.extern.slf4j.Slf4j;
