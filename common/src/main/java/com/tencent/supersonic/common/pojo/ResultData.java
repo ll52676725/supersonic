@@ -18,6 +18,10 @@ public class ResultData<T> {
         this.timestamp = System.currentTimeMillis();
     }
 
+    public static <T> ResultData<T> success() {
+        return success(null);
+    }
+
     public static <T> ResultData<T> success(T data) {
         ResultData<T> resultData = new ResultData<>();
         resultData.setCode(ReturnCode.SUCCESS.getCode());

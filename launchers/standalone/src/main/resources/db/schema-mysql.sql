@@ -550,3 +550,110 @@ CREATE TABLE IF NOT EXISTS `s2_user_token` (
     unique key name_username (`name`, `user_name`),
     PRIMARY KEY (`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci  comment='用户令牌信息表';
+
+CREATE TABLE IF NOT EXISTS `s2_role` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '角色ID',
+    `role_code` varchar(100) NOT NULL COMMENT '角色编码',
+    `role_name` varchar(100) NOT NULL COMMENT '角色名称',
+    `description` varchar(500) DEFAULT NULL COMMENT '角色描述',
+    `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态 0-禁用 1-启用',
+    `sort` int(11) DEFAULT 0 COMMENT '排序',
+    `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+    `created_by` varchar(100) DEFAULT NULL COMMENT '创建人',
+    `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+    `updated_by` varchar(100) DEFAULT NULL COMMENT '更新人',
+    UNIQUE KEY `uk_role_code` (`role_code`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色表';
+
+CREATE TABLE IF NOT EXISTS `s2_permission` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '权限ID',
+    `permission_code` varchar(100) NOT NULL COMMENT '权限编码',
+    `permission_name` varchar(100) NOT NULL COMMENT '权限名称',
+    `description` varchar(500) DEFAULT NULL COMMENT '权限描述',
+    `type` varchar(50) DEFAULT NULL COMMENT '权限类型',
+    `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态 0-禁用 1-启用',
+    `sort` int(11) DEFAULT 0 COMMENT '排序',
+    `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+    `created_by` varchar(100) DEFAULT NULL COMMENT '创建人',
+    `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+    `updated_by` varchar(100) DEFAULT NULL COMMENT '更新人',
+    UNIQUE KEY `uk_permission_code` (`permission_code`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='权限表';
+
+CREATE TABLE IF NOT EXISTS `s2_menu` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
+    `menu_code` varchar(100) NOT NULL COMMENT '菜单编码',
+    `menu_name` varchar(100) NOT NULL COMMENT '菜单名称',
+    `parent_id` bigint(20) DEFAULT 0 COMMENT '父菜单ID',
+    `path` varchar(200) DEFAULT NULL COMMENT '路由路径',
+    `icon` varchar(100) DEFAULT NULL COMMENT '菜单图标',
+    `component` varchar(200) DEFAULT NULL COMMENT '组件路径',
+    `description` varchar(500) DEFAULT NULL COMMENT '菜单描述',
+    `type` varchar(50) DEFAULT NULL COMMENT '菜单类型 directory-目录 menu-菜单',
+    `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态 0-禁用 1-启用',
+    `sort` int(11) DEFAULT 0 COMMENT '排序',
+    `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+    `created_by` varchar(100) DEFAULT NULL COMMENT '创建人',
+    `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+    `updated_by` varchar(100) DEFAULT NULL COMMENT '更新人',
+    UNIQUE KEY `uk_menu_code` (`menu_code`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='菜单表';
+
+CREATE TABLE IF NOT EXISTS `s2_role_permission` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+    `permission_id` bigint(20) NOT NULL COMMENT '权限ID',
+    `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+    `created_by` varchar(100) DEFAULT NULL COMMENT '创建人',
+    UNIQUE KEY `uk_role_permission` (`role_id`, `permission_id`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色权限关联表';
+
+CREATE TABLE IF NOT EXISTS `s2_role_menu` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+    `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
+    `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+    `created_by` varchar(100) DEFAULT NULL COMMENT '创建人',
+    UNIQUE KEY `uk_role_menu` (`role_id`, `menu_id`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色菜单关联表';
+
+CREATE TABLE IF NOT EXISTS `s2_user_role` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+    `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+    `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+    `created_by` varchar(100) DEFAULT NULL COMMENT '创建人',
+    UNIQUE KEY `uk_user_role` (`user_id`, `role_id`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户角色关联表';
+
+CREATE TABLE IF NOT EXISTS `s2_organization` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '组织ID',
+    `org_code` varchar(100) NOT NULL COMMENT '组织编码',
+    `org_name` varchar(100) NOT NULL COMMENT '组织名称',
+    `parent_id` bigint(20) DEFAULT 0 COMMENT '父组织ID',
+    `description` varchar(500) DEFAULT NULL COMMENT '组织描述',
+    `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态 0-禁用 1-启用',
+    `sort` int(11) DEFAULT 0 COMMENT '排序',
+    `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+    `created_by` varchar(100) DEFAULT NULL COMMENT '创建人',
+    `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+    `updated_by` varchar(100) DEFAULT NULL COMMENT '更新人',
+    UNIQUE KEY `uk_org_code` (`org_code`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='组织架构表';
+
+CREATE TABLE IF NOT EXISTS `s2_role_organization` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+    `organization_id` bigint(20) NOT NULL COMMENT '组织ID',
+    `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+    `created_by` varchar(100) DEFAULT NULL COMMENT '创建人',
+    UNIQUE KEY `uk_role_org` (`role_id`, `organization_id`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色组织关联表';

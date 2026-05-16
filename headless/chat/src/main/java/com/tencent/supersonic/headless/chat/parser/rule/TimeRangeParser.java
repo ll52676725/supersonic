@@ -1,16 +1,20 @@
 package com.tencent.supersonic.headless.chat.parser.rule;
 
 import com.tencent.supersonic.common.pojo.DateConf;
+import com.tencent.supersonic.common.pojo.TimeExpressionParseConfig;
 import com.tencent.supersonic.common.pojo.enums.DatePeriodEnum;
 import com.tencent.supersonic.headless.api.pojo.DataSetSchema;
 import com.tencent.supersonic.headless.api.pojo.SchemaElement;
 import com.tencent.supersonic.headless.api.pojo.SemanticParseInfo;
 import com.tencent.supersonic.headless.chat.ChatQueryContext;
 import com.tencent.supersonic.headless.chat.parser.SemanticParser;
+import com.tencent.supersonic.headless.chat.parser.TimeExpressionParserFacade;
 import com.tencent.supersonic.headless.chat.query.SemanticQuery;
 import com.xkzhangsan.time.nlp.TimeNLP;
 import com.xkzhangsan.time.nlp.TimeNLPUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -25,9 +29,11 @@ import java.util.regex.Pattern;
 /**
  * TimeRangeParser extracts time range specified in the user query based on keyword matching.
  * Currently, it supports two kinds of expression: 1. Recent unit: 近N天/周/月/年、过去N天/周/月/年 2. Concrete
- * date: 2023年11月15日、20231115
+ * date: 2023年11月15日、20231115 Enhanced with: Rule-based parser (supporting holidays and complex
+ * expressions) and LLM-based parser
  */
 @Slf4j
+@Component
 public class TimeRangeParser implements SemanticParser {
 
     private static final Pattern RECENT_PATTERN_CN = Pattern.compile(
@@ -36,6 +42,9 @@ public class TimeRangeParser implements SemanticParser {
     private static final DateFormat DATE_FORMAT_NUMBER = new SimpleDateFormat("yyyyMMdd");
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
+    @Autowired
+    private TimeExpressionParserFacade timeExpressionParserFacade;
+
     @Override
     public void parse(ChatQueryContext queryContext) {
         if (queryContext.getCandidateQueries().isEmpty()) {
@@ -43,7 +52,23 @@ public class TimeRangeParser implements SemanticParser {
         }
 
         String queryText = queryContext.getRequest().getQueryText();
-        DateConf dateConf = parseRecent(queryText);
+        DateConf dateConf = null;
+
+        if (timeExpressionParserFacade != null) {
+            try {
+                TimeExpressionParseConfig config = new TimeExpressionParseConfig();
+                config.setParseMode(TimeExpressionParseConfig.ParseMode.RULE_FIRST);
+                dateConf = timeExpressionParserFacade.parse(queryText, config);
+                log.info("Using enhanced time expression parser for: {}", queryText);
+            } catch (Exception e) {
+                log.warn("Enhanced time parser failed, falling back to original parser: {}",
+                        e.getMessage());
+            }
+        }
+
+        if (dateConf == null) {
+            dateConf = parseRecent(queryText);
+        }
         if (dateConf == null) {
             dateConf = parseDateNumber(queryText);
         }
