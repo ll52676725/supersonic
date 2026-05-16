@@ -189,7 +189,8 @@ public class AuthorizationController {
     }
 
     @PostMapping("/organization/roles")
-    public ResultData<Void> assignRolesToOrganization(@RequestBody OrganizationReq organizationReq) {
+    public ResultData<Void> assignRolesToOrganization(
+            @RequestBody OrganizationReq organizationReq) {
         authorizationService.assignRolesToOrganization(organizationReq);
         return ResultData.success(null);
     }

@@ -35,13 +35,10 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     private final RoleOrganizationDOMapper roleOrganizationDOMapper;
 
     public AuthorizationServiceImpl(RoleDOMapper roleDOMapper,
-                                    PermissionDOMapper permissionDOMapper,
-                                    MenuDOMapper menuDOMapper,
-                                    OrganizationDOMapper organizationDOMapper,
-                                    RolePermissionDOMapper rolePermissionDOMapper,
-                                    RoleMenuDOMapper roleMenuDOMapper,
-                                    UserRoleDOMapper userRoleDOMapper,
-                                    RoleOrganizationDOMapper roleOrganizationDOMapper) {
+            PermissionDOMapper permissionDOMapper, MenuDOMapper menuDOMapper,
+            OrganizationDOMapper organizationDOMapper,
+            RolePermissionDOMapper rolePermissionDOMapper, RoleMenuDOMapper roleMenuDOMapper,
+            UserRoleDOMapper userRoleDOMapper, RoleOrganizationDOMapper roleOrganizationDOMapper) {
         this.roleDOMapper = roleDOMapper;
         this.permissionDOMapper = permissionDOMapper;
         this.menuDOMapper = menuDOMapper;
@@ -54,8 +51,8 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
     @Override
     public List<Role> getAllRoles() {
-        List<RoleDO> roleDOList = roleDOMapper.selectList(
-                new QueryWrapper<RoleDO>().orderByAsc("sort"));
+        List<RoleDO> roleDOList =
+                roleDOMapper.selectList(new QueryWrapper<RoleDO>().orderByAsc("sort"));
         return roleDOList.stream().map(this::convertToRole).collect(Collectors.toList());
     }
 
@@ -147,9 +144,10 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
     @Override
     public List<Permission> getAllPermissions() {
-        List<PermissionDO> permissionDOList = permissionDOMapper.selectList(
-                new QueryWrapper<PermissionDO>().orderByAsc("sort"));
-        return permissionDOList.stream().map(this::convertToPermission).collect(Collectors.toList());
+        List<PermissionDO> permissionDOList =
+                permissionDOMapper.selectList(new QueryWrapper<PermissionDO>().orderByAsc("sort"));
+        return permissionDOList.stream().map(this::convertToPermission)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -189,8 +187,8 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
     @Override
     public List<Menu> getAllMenus() {
-        List<MenuDO> menuDOList = menuDOMapper.selectList(
-                new QueryWrapper<MenuDO>().orderByAsc("sort"));
+        List<MenuDO> menuDOList =
+                menuDOMapper.selectList(new QueryWrapper<MenuDO>().orderByAsc("sort"));
         return menuDOList.stream().map(this::convertToMenu).collect(Collectors.toList());
     }
 
@@ -294,11 +292,9 @@ public class AuthorizationServiceImpl implements AuthorizationService {
             return Collections.emptyList();
         }
         List<MenuDO> menuDOList = menuDOMapper.selectBatchIds(menuIdSet);
-        List<Menu> menus = menuDOList.stream()
-                .filter(m -> m.getStatus() == 1)
-                .map(this::convertToMenu)
-                .sorted(Comparator.comparing(Menu::getSort))
-                .collect(Collectors.toList());
+        List<Menu> menus =
+                menuDOList.stream().filter(m -> m.getStatus() == 1).map(this::convertToMenu)
+                        .sorted(Comparator.comparing(Menu::getSort)).collect(Collectors.toList());
         return buildTree(menus);
     }
 
@@ -319,17 +315,16 @@ public class AuthorizationServiceImpl implements AuthorizationService {
             return Collections.emptyList();
         }
         List<PermissionDO> permissionDOList = permissionDOMapper.selectBatchIds(permissionIdSet);
-        return permissionDOList.stream()
-                .filter(p -> p.getStatus() == 1)
-                .map(this::convertToPermission)
-                .collect(Collectors.toList());
+        return permissionDOList.stream().filter(p -> p.getStatus() == 1)
+                .map(this::convertToPermission).collect(Collectors.toList());
     }
 
     @Override
     public List<Organization> getAllOrganizations() {
-        List<OrganizationDO> organizationDOList = organizationDOMapper.selectList(
-                new QueryWrapper<OrganizationDO>().orderByAsc("sort"));
-        return organizationDOList.stream().map(this::convertToOrganization).collect(Collectors.toList());
+        List<OrganizationDO> organizationDOList = organizationDOMapper
+                .selectList(new QueryWrapper<OrganizationDO>().orderByAsc("sort"));
+        return organizationDOList.stream().map(this::convertToOrganization)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -352,7 +347,8 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         BeanUtils.copyProperties(organizationReq, organizationDO);
         organizationDO.setCreatedAt(new Date());
         organizationDO.setCreatedBy(currentUser);
-        organizationDO.setStatus(organizationReq.getStatus() != null ? organizationReq.getStatus() : 1);
+        organizationDO
+                .setStatus(organizationReq.getStatus() != null ? organizationReq.getStatus() : 1);
         organizationDOMapper.insert(organizationDO);
 
         if (!CollectionUtils.isEmpty(organizationReq.getRoleIds())) {
@@ -441,22 +437,23 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         if (CollectionUtils.isEmpty(organizations)) {
             return Collections.emptyList();
         }
-        Map<Long, List<Organization>> parentChildrenMap = organizations.stream()
-                .collect(Collectors.groupingBy(org -> org.getParentId() != null ? org.getParentId() : 0L));
-        List<Organization> rootOrganizations = parentChildrenMap.getOrDefault(0L, Collections.emptyList());
+        Map<Long, List<Organization>> parentChildrenMap = organizations.stream().collect(
+                Collectors.groupingBy(org -> org.getParentId() != null ? org.getParentId() : 0L));
+        List<Organization> rootOrganizations =
+                parentChildrenMap.getOrDefault(0L, Collections.emptyList());
         for (Organization organization : rootOrganizations) {
             setOrganizationChildren(organization, parentChildrenMap);
         }
-        return rootOrganizations.stream()
-                .sorted(Comparator.comparing(Organization::getSort))
+        return rootOrganizations.stream().sorted(Comparator.comparing(Organization::getSort))
                 .collect(Collectors.toList());
     }
 
-    private void setOrganizationChildren(Organization parent, Map<Long, List<Organization>> parentChildrenMap) {
-        List<Organization> children = parentChildrenMap.getOrDefault(parent.getId(), Collections.emptyList());
+    private void setOrganizationChildren(Organization parent,
+            Map<Long, List<Organization>> parentChildrenMap) {
+        List<Organization> children =
+                parentChildrenMap.getOrDefault(parent.getId(), Collections.emptyList());
         if (!children.isEmpty()) {
-            children = children.stream()
-                    .sorted(Comparator.comparing(Organization::getSort))
+            children = children.stream().sorted(Comparator.comparing(Organization::getSort))
                     .collect(Collectors.toList());
             parent.setChildren(children);
             for (Organization child : children) {
@@ -475,22 +472,21 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         if (CollectionUtils.isEmpty(menus)) {
             return Collections.emptyList();
         }
-        Map<Long, List<Menu>> parentChildrenMap = menus.stream()
-                .collect(Collectors.groupingBy(menu -> menu.getParentId() != null ? menu.getParentId() : 0L));
+        Map<Long, List<Menu>> parentChildrenMap = menus.stream().collect(Collectors
+                .groupingBy(menu -> menu.getParentId() != null ? menu.getParentId() : 0L));
         List<Menu> rootMenus = parentChildrenMap.getOrDefault(0L, Collections.emptyList());
         for (Menu menu : rootMenus) {
             setChildren(menu, parentChildrenMap);
         }
-        return rootMenus.stream()
-                .sorted(Comparator.comparing(Menu::getSort))
+        return rootMenus.stream().sorted(Comparator.comparing(Menu::getSort))
                 .collect(Collectors.toList());
     }
 
     private void setChildren(Menu parent, Map<Long, List<Menu>> parentChildrenMap) {
-        List<Menu> children = parentChildrenMap.getOrDefault(parent.getId(), Collections.emptyList());
+        List<Menu> children =
+                parentChildrenMap.getOrDefault(parent.getId(), Collections.emptyList());
         if (!children.isEmpty()) {
-            children = children.stream()
-                    .sorted(Comparator.comparing(Menu::getSort))
+            children = children.stream().sorted(Comparator.comparing(Menu::getSort))
                     .collect(Collectors.toList());
             parent.setChildren(children);
             for (Menu child : children) {

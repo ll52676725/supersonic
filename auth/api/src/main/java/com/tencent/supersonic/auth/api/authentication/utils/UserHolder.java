@@ -12,6 +12,7 @@ import org.springframework.util.CollectionUtils;
 public final class UserHolder {
 
     private static UserStrategy REPO;
+    private static final ThreadLocal<User> USER_THREAD_LOCAL = new ThreadLocal<>();
 
     public static synchronized void setStrategy(UserStrategy strategy) {
         REPO = strategy;
@@ -19,12 +20,28 @@ public final class UserHolder {
 
     public static User findUser(HttpServletRequest request, HttpServletResponse response) {
         User user = REPO.findUser(request, response);
-        return getUser(user);
+        user = getUser(user);
+        USER_THREAD_LOCAL.set(user);
+        return user;
     }
 
     public static User findUser(String token, String appKey) {
         User user = REPO.findUser(token, appKey);
-        return getUser(user);
+        user = getUser(user);
+        USER_THREAD_LOCAL.set(user);
+        return user;
+    }
+
+    public static User get() {
+        return USER_THREAD_LOCAL.get();
+    }
+
+    public static void set(User user) {
+        USER_THREAD_LOCAL.set(user);
+    }
+
+    public static void remove() {
+        USER_THREAD_LOCAL.remove();
     }
 
     private static User getUser(User user) {
