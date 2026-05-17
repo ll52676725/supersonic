@@ -105,6 +105,10 @@ public class QueryMatcher {
                 && count > queryMatchOption.getRequireNumber()) {
             return false;
         }
+        if (queryMatchOption.getRequireNumberType().equals(QueryMatchOption.RequireNumberType.EQUAL)
+                && count != queryMatchOption.getRequireNumber()) {
+            return false;
+        }
         return true;
     }
 }
